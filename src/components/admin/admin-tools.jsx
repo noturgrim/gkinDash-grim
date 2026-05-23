@@ -11,7 +11,6 @@ import { Button } from "../ui/button";
 import {
   Trash2,
   AlertTriangle,
-  BarChart3,
   Key,
   MessageSquare,
   Settings,
@@ -282,281 +281,189 @@ export function AdminTools() {
 
   // Render the Messages tab content
   const renderMessagesTab = () => {
+    const serverOnline = systemStatus?.server?.status === "online";
+
     return (
-      <div className="space-y-8">
-        {/* Quick Stats Overview */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+      <div className="space-y-5">
+        {/* Stats row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             {
-              label: "Total Messages",
+              label: "Messages",
               value: stats ? stats.messageCount.toLocaleString() : "—",
               icon: MessageSquare,
-              bg: "bg-indigo-500",
-              light: "bg-indigo-50",
-              text: "text-indigo-600",
+              color: "text-indigo-600",
+              bg: "bg-indigo-50",
             },
             {
-              label: "Total Mentions",
+              label: "Mentions",
               value: stats ? stats.mentionCount.toLocaleString() : "—",
               icon: AlertTriangle,
-              bg: "bg-amber-500",
-              light: "bg-amber-50",
-              text: "text-amber-600",
+              color: "text-amber-600",
+              bg: "bg-amber-50",
             },
             {
               label: "Active Users",
               value: stats?.topUsers ? stats.topUsers.length : "—",
               icon: Users,
-              bg: "bg-emerald-500",
-              light: "bg-emerald-50",
-              text: "text-emerald-600",
+              color: "text-emerald-600",
+              bg: "bg-emerald-50",
             },
             {
-              label: "System Status",
-              value:
-                systemStatus?.server?.status === "online"
-                  ? "Online"
-                  : systemStatus?.server?.status
-                  ? "Offline"
-                  : "—",
+              label: "Server",
+              value: systemStatus ? (serverOnline ? "Online" : "Offline") : "—",
               icon: Activity,
-              bg:
-                systemStatus?.server?.status === "online"
-                  ? "bg-green-500"
-                  : "bg-red-500",
-              light:
-                systemStatus?.server?.status === "online"
-                  ? "bg-green-50"
-                  : "bg-red-50",
-              text:
-                systemStatus?.server?.status === "online"
-                  ? "text-green-600"
-                  : "text-red-600",
+              color: serverOnline ? "text-green-600" : "text-red-500",
+              bg: serverOnline ? "bg-green-50" : "bg-red-50",
             },
-          ].map(({ label, value, icon: Icon, bg, light, text }) => (
+          ].map(({ label, value, icon: Icon, color, bg }) => (
             <div
               key={label}
-              className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 sm:p-5 flex items-center gap-3 sm:gap-4"
+              className="bg-white border border-slate-100 rounded-xl p-4 flex items-center gap-3"
             >
               <div
-                className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}
+                className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center flex-shrink-0`}
               >
-                <Icon className="w-5 h-5 text-white" />
+                <Icon className={`w-4 h-4 ${color}`} />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-medium text-slate-400 uppercase tracking-wide truncate">
-                  {label}
-                </p>
-                <p className="text-xl sm:text-2xl font-bold text-slate-900">{value}</p>
+                <p className="text-xs text-slate-400 truncate">{label}</p>
+                <p className={`text-lg font-bold ${color}`}>{value}</p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Message Management Section */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
-            <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-              <Trash2 className="w-4 h-4 text-red-600" />
+        {/* Analytics + Danger Zone side-by-side on large screens */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+          {/* Top Users */}
+          <div className="lg:col-span-3 bg-white border border-slate-100 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-slate-400" />
+                <h3 className="text-sm font-semibold text-slate-800">
+                  Top Active Users
+                </h3>
+              </div>
+              <button
+                onClick={fetchMessageStats}
+                disabled={loading}
+                className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-700 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
+                />
+                Refresh
+              </button>
             </div>
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">Message Management</h3>
-              <p className="text-xs text-slate-500">Manage and clear system message data</p>
+
+            <div className="p-4">
+              {loading && !stats ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-5 h-5 text-slate-300 animate-spin" />
+                </div>
+              ) : stats?.topUsers?.length > 0 ? (
+                <div className="space-y-2">
+                  {stats.topUsers.map((user, index) => {
+                    const maxCount = Math.max(
+                      ...stats.topUsers.map((u) => u.message_count),
+                    );
+                    const percentage = (user.message_count / maxCount) * 100;
+
+                    return (
+                      <div key={index} className="flex items-center gap-3 py-2">
+                        <span className="w-5 text-center text-xs font-semibold text-slate-400 flex-shrink-0">
+                          {index + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium text-slate-700 truncate">
+                              {user.username || "Unknown"}
+                            </span>
+                            <span className="text-xs font-semibold text-slate-500 ml-2 flex-shrink-0">
+                              {user.message_count.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-1">
+                            <div
+                              className="h-1 rounded-full bg-indigo-400 transition-all duration-500"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Database className="w-8 h-8 text-slate-200 mb-2" />
+                  <p className="text-sm text-slate-400">No activity data yet</p>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="p-6 space-y-4">
-            <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
-              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-px" />
-              <div>
-                <p className="text-sm font-semibold text-amber-800 mb-0.5">Data Deletion Warning</p>
-                <p className="text-xs text-amber-700 leading-relaxed">
-                  This permanently removes all messages, mentions and related data. This cannot be reversed.
-                </p>
-              </div>
+          {/* Danger Zone */}
+          <div className="lg:col-span-2 bg-white border border-slate-100 rounded-xl overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100">
+              <Trash2 className="w-4 h-4 text-red-400" />
+              <h3 className="text-sm font-semibold text-slate-800">
+                Danger Zone
+              </h3>
             </div>
 
-            {!showConfirm ? (
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  variant="destructive"
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Permanently deletes all messages, mentions, and related data.
+                This cannot be undone.
+              </p>
+
+              {error && (
+                <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                  <p className="text-xs text-red-600">{error}</p>
+                </div>
+              )}
+
+              {!showConfirm ? (
+                <button
                   onClick={() => setShowConfirm(true)}
-                  className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl px-5 h-10 shadow-sm"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                   Clear All Messages
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={fetchMessageStats}
-                  disabled={loading}
-                  className="inline-flex items-center gap-2 h-10 px-5 text-sm font-medium rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50"
-                >
-                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-                  Refresh Data
-                </Button>
-              </div>
-            ) : (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-5">
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-red-200 flex items-center justify-center flex-shrink-0">
-                    <AlertTriangle className="w-4 h-4 text-red-700" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-red-900 mb-1">Final Confirmation Required</p>
-                    <p className="text-sm text-red-800 leading-relaxed">
-                      You are about to permanently delete <strong>all messages</strong>,{" "}
-                      <strong>all mentions</strong>, and <strong>all related data</strong>.
-                      This action is <strong>irreversible</strong> and will affect all users.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-3 pt-4 border-t border-red-200">
-                  <Button
-                    variant="destructive"
-                    onClick={handleClearMessages}
-                    disabled={loading}
-                    className="inline-flex items-center gap-2 bg-red-700 hover:bg-red-800 text-white text-sm font-semibold rounded-xl px-5 h-10 shadow-sm"
-                  >
-                    {loading ? (
-                      <><Loader2 className="h-4 w-4 animate-spin" /><span>Deleting…</span></>
-                    ) : (
-                      <><Trash2 className="h-4 w-4" /><span>Yes, Delete Everything</span></>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowConfirm(false)}
-                    disabled={loading}
-                    className="inline-flex items-center gap-2 h-10 px-5 text-sm font-medium rounded-xl border-slate-300 text-slate-600 hover:bg-white"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-                <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                <p className="text-sm text-red-700 font-medium">{error}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Message Analytics */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                <BarChart3 className="w-4 h-4 text-indigo-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900">Analytics &amp; Statistics</h3>
-                <p className="text-xs text-slate-500">Message data and user activity insights</p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              onClick={fetchMessageStats}
-              disabled={loading}
-              className="inline-flex items-center gap-2 h-9 px-4 text-xs font-medium rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50"
-            >
-              {loading ? (
-                <><Loader2 className="h-3.5 w-3.5 animate-spin" /><span>Loading…</span></>
+                </button>
               ) : (
-                <><RefreshCw className="h-3.5 w-3.5" /><span>Refresh</span></>
-              )}
-            </Button>
-          </div>
-
-          {stats && (
-            <div className="p-6 space-y-6">
-              {/* Metric pair */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="rounded-xl bg-indigo-50 border border-indigo-100 p-5 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-500 flex items-center justify-center flex-shrink-0">
-                    <MessageSquare className="w-6 h-6 text-white" />
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
+                    Are you sure? This will permanently remove everything.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleClearMessages}
+                      disabled={loading}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-60"
+                    >
+                      {loading ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
+                      {loading ? "Deleting…" : "Confirm"}
+                    </button>
+                    <button
+                      onClick={() => setShowConfirm(false)}
+                      disabled={loading}
+                      className="flex-1 px-3 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
                   </div>
-                  <div>
-                    <p className="text-xs font-medium text-indigo-400 uppercase tracking-wide">Total Messages</p>
-                    <p className="text-3xl font-bold text-indigo-900">{stats.messageCount.toLocaleString()}</p>
-                    <p className="text-xs text-indigo-500 mt-0.5">System-wide count</p>
-                  </div>
-                </div>
-
-                <div className="rounded-xl bg-amber-50 border border-amber-100 p-5 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center flex-shrink-0">
-                    <AlertTriangle className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-amber-400 uppercase tracking-wide">Total Mentions</p>
-                    <p className="text-3xl font-bold text-amber-900">{stats.mentionCount.toLocaleString()}</p>
-                    <p className="text-xs text-amber-500 mt-0.5">User notifications</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Top Users */}
-              {stats.topUsers && stats.topUsers.length > 0 ? (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <TrendingUp className="w-4 h-4 text-slate-400" />
-                    <h4 className="text-sm font-semibold text-slate-700">Top Active Users</h4>
-                    <span className="text-xs text-slate-400">by message count</span>
-                  </div>
-                  <div className="space-y-2">
-                    {stats.topUsers.map((user, index) => {
-                      const maxCount = Math.max(...stats.topUsers.map((u) => u.message_count));
-                      const percentage = (user.message_count / maxCount) * 100;
-                      const rankColors = ["bg-indigo-500", "bg-indigo-400", "bg-indigo-300"];
-                      const barColor = index < 3 ? rankColors[index] : "bg-slate-300";
-
-                      return (
-                        <div
-                          key={index}
-                          className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-100"
-                        >
-                          <div
-                            className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-white flex-shrink-0 ${
-                              index < 3 ? "bg-indigo-500" : "bg-slate-400"
-                            }`}
-                          >
-                            {index + 1}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-sm font-semibold text-slate-800 truncate">
-                                {user.username || "Unknown User"}
-                              </span>
-                              <span className="text-sm font-bold text-slate-600 ml-2 flex-shrink-0">
-                                {user.message_count.toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="w-full bg-slate-200 rounded-full h-1.5">
-                              <div
-                                className={`h-1.5 rounded-full transition-all duration-500 ${barColor}`}
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-10 text-center">
-                  <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
-                    <Database className="w-6 h-6 text-slate-400" />
-                  </div>
-                  <p className="text-sm font-medium text-slate-500">No user data available</p>
-                  <p className="text-xs text-slate-400 mt-1">Activity statistics will appear once data is collected.</p>
                 </div>
               )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     );
@@ -604,8 +511,12 @@ export function AdminTools() {
                 <Mail className="w-4 h-4 text-blue-600" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-slate-800">Email Configuration</h3>
-                <p className="text-xs text-slate-400">SMTP settings for system notifications</p>
+                <h3 className="text-sm font-semibold text-slate-800">
+                  Email Configuration
+                </h3>
+                <p className="text-xs text-slate-400">
+                  SMTP settings for system notifications
+                </p>
               </div>
             </div>
             <button
@@ -613,7 +524,11 @@ export function AdminTools() {
               disabled={loading}
               className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-indigo-600 border border-slate-200 hover:border-indigo-300 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
             >
-              {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+              {loading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3 h-3" />
+              )}
               Refresh
             </button>
           </div>
@@ -633,29 +548,53 @@ export function AdminTools() {
                   {emailSettings.map((setting, index) => (
                     <div key={setting.setting_name} className="space-y-1.5">
                       <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide capitalize">
-                        {setting.setting_name.replace("smtp_", "").replace(/_/g, " ")}
+                        {setting.setting_name
+                          .replace("smtp_", "")
+                          .replace(/_/g, " ")}
                       </label>
                       {setting.setting_name.includes("password") ? (
                         <div className="relative">
                           <input
-                            type={showPasswords[setting.setting_name] ? "text" : "password"}
-                            value={setting.setting_value === "••••••••" ? "" : setting.setting_value}
-                            onChange={(e) => handleEmailSettingChange(index, e.target.value)}
-                            placeholder={setting.setting_value === "••••••••" ? "Enter new password" : ""}
+                            type={
+                              showPasswords[setting.setting_name]
+                                ? "text"
+                                : "password"
+                            }
+                            value={
+                              setting.setting_value === "••••••••"
+                                ? ""
+                                : setting.setting_value
+                            }
+                            onChange={(e) =>
+                              handleEmailSettingChange(index, e.target.value)
+                            }
+                            placeholder={
+                              setting.setting_value === "••••••••"
+                                ? "Enter new password"
+                                : ""
+                            }
                             className="w-full px-3 py-2.5 pr-10 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                           />
                           <button
                             type="button"
-                            onClick={() => togglePasswordVisibility(setting.setting_name)}
+                            onClick={() =>
+                              togglePasswordVisibility(setting.setting_name)
+                            }
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                           >
-                            {showPasswords[setting.setting_name] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            {showPasswords[setting.setting_name] ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
                           </button>
                         </div>
                       ) : setting.setting_name === "smtp_secure" ? (
                         <select
                           value={setting.setting_value}
-                          onChange={(e) => handleEmailSettingChange(index, e.target.value)}
+                          onChange={(e) =>
+                            handleEmailSettingChange(index, e.target.value)
+                          }
                           className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition bg-white"
                         >
                           <option value="true">Yes (SSL/TLS)</option>
@@ -663,9 +602,15 @@ export function AdminTools() {
                         </select>
                       ) : (
                         <input
-                          type={setting.setting_name === "smtp_port" ? "number" : "text"}
+                          type={
+                            setting.setting_name === "smtp_port"
+                              ? "number"
+                              : "text"
+                          }
                           value={setting.setting_value}
-                          onChange={(e) => handleEmailSettingChange(index, e.target.value)}
+                          onChange={(e) =>
+                            handleEmailSettingChange(index, e.target.value)
+                          }
                           className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                         />
                       )}
@@ -680,7 +625,15 @@ export function AdminTools() {
                     disabled={loading}
                     className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-colors shadow-sm disabled:opacity-60"
                   >
-                    {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : <><Save className="w-4 h-4" /> Save Settings</>}
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Saving…
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" /> Save Settings
+                      </>
+                    )}
                   </button>
 
                   <div className="flex gap-2 flex-1">
@@ -718,8 +671,12 @@ export function AdminTools() {
                 <Activity className="w-4 h-4 text-slate-600" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-slate-800">System Health</h3>
-                <p className="text-xs text-slate-400">Real-time server & database status</p>
+                <h3 className="text-sm font-semibold text-slate-800">
+                  System Health
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Real-time server & database status
+                </p>
               </div>
             </div>
             <button
@@ -727,7 +684,11 @@ export function AdminTools() {
               disabled={loading}
               className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-indigo-600 border border-slate-200 hover:border-indigo-300 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
             >
-              {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+              {loading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3 h-3" />
+              )}
               Refresh
             </button>
           </div>
@@ -738,17 +699,33 @@ export function AdminTools() {
               {(() => {
                 const online = systemStatus?.server?.status === "online";
                 return (
-                  <div className={`rounded-xl border p-5 flex items-center gap-4 ${online ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"}`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${online ? "bg-emerald-100" : "bg-red-100"}`}>
-                      <Activity className={`w-5 h-5 ${online ? "text-emerald-600" : "text-red-600"}`} />
+                  <div
+                    className={`rounded-xl border p-5 flex items-center gap-4 ${online ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"}`}
+                  >
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${online ? "bg-emerald-100" : "bg-red-100"}`}
+                    >
+                      <Activity
+                        className={`w-5 h-5 ${online ? "text-emerald-600" : "text-red-600"}`}
+                      />
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Server</p>
-                      <p className={`text-sm font-bold ${online ? "text-emerald-700" : "text-red-700"}`}>
-                        {online ? "Online" : systemStatus?.server?.status === "offline" ? "Offline" : "Unknown"}
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                        Server
+                      </p>
+                      <p
+                        className={`text-sm font-bold ${online ? "text-emerald-700" : "text-red-700"}`}
+                      >
+                        {online
+                          ? "Online"
+                          : systemStatus?.server?.status === "offline"
+                            ? "Offline"
+                            : "Unknown"}
                       </p>
                       {systemStatus?.server?.uptime && (
-                        <p className="text-xs text-slate-500 mt-0.5">Uptime: {formatUptime(systemStatus.server.uptime)}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Uptime: {formatUptime(systemStatus.server.uptime)}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -759,17 +736,33 @@ export function AdminTools() {
               {(() => {
                 const connected = systemStatus?.database?.connected;
                 return (
-                  <div className={`rounded-xl border p-5 flex items-center gap-4 ${connected ? "border-blue-200 bg-blue-50" : "border-red-200 bg-red-50"}`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${connected ? "bg-blue-100" : "bg-red-100"}`}>
-                      <Database className={`w-5 h-5 ${connected ? "text-blue-600" : "text-red-600"}`} />
+                  <div
+                    className={`rounded-xl border p-5 flex items-center gap-4 ${connected ? "border-blue-200 bg-blue-50" : "border-red-200 bg-red-50"}`}
+                  >
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${connected ? "bg-blue-100" : "bg-red-100"}`}
+                    >
+                      <Database
+                        className={`w-5 h-5 ${connected ? "text-blue-600" : "text-red-600"}`}
+                      />
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Database</p>
-                      <p className={`text-sm font-bold ${connected ? "text-blue-700" : "text-red-700"}`}>
-                        {connected ? "Connected" : systemStatus?.database?.status === "disconnected" ? "Disconnected" : "Unknown"}
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                        Database
+                      </p>
+                      <p
+                        className={`text-sm font-bold ${connected ? "text-blue-700" : "text-red-700"}`}
+                      >
+                        {connected
+                          ? "Connected"
+                          : systemStatus?.database?.status === "disconnected"
+                            ? "Disconnected"
+                            : "Unknown"}
                       </p>
                       {systemStatus?.database?.error && (
-                        <p className="text-xs text-red-500 mt-0.5">{systemStatus.database.error}</p>
+                        <p className="text-xs text-red-500 mt-0.5">
+                          {systemStatus.database.error}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -779,12 +772,12 @@ export function AdminTools() {
 
             {systemStatus?.server?.timestamp && (
               <p className="text-xs text-slate-400 text-center mt-4">
-                Last checked: {new Date(systemStatus.server.timestamp).toLocaleString()}
+                Last checked:{" "}
+                {new Date(systemStatus.server.timestamp).toLocaleString()}
               </p>
             )}
           </div>
         </div>
-
       </div>
     );
   };
@@ -821,7 +814,9 @@ export function AdminTools() {
               Dashboard
             </Link>
             <span className="text-slate-300">/</span>
-            <span className="text-sm font-semibold text-slate-900">Admin Tools</span>
+            <span className="text-sm font-semibold text-slate-900">
+              Admin Tools
+            </span>
           </div>
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-full">
             <Shield className="w-3.5 h-3.5" />
@@ -838,8 +833,12 @@ export function AdminTools() {
               <Settings className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Admin Control Center</h1>
-              <p className="text-slate-500 text-sm">System management, monitoring &amp; configuration</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
+                Admin Control Center
+              </h1>
+              <p className="text-slate-500 text-sm">
+                System management, monitoring &amp; configuration
+              </p>
             </div>
           </div>
 

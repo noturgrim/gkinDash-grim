@@ -6,8 +6,6 @@ import {
   Lock,
   Shield,
   Search,
-  SortAsc,
-  SortDesc,
   Eye,
   EyeOff,
   AlertTriangle,
@@ -19,17 +17,6 @@ import {
 } from "lucide-react";
 import passcodeService from "../../services/passcodeService";
 import authService from "../../services/authService";
-
-// Add animation styles
-const animationStyles = `
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in {
-  animation: fadeIn 0.2s ease-out forwards;
-}
-`;
 
 // Function to evaluate password strength
 const evaluatePasswordStrength = (password) => {
@@ -76,12 +63,10 @@ export function PasscodeManager({ isEmbedded = false }) {
   });
   const [currentUser, setCurrentUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortOrder, setSortOrder] = useState("asc");
   const [showPasswords, setShowPasswords] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [roleToUpdate, setRoleToUpdate] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [lastUpdated, setLastUpdated] = useState(null);
 
   // Fetch passcodes on component mount or when refresh is triggered
   useEffect(() => {
@@ -102,7 +87,6 @@ export function PasscodeManager({ isEmbedded = false }) {
       setLoading(true);
       const data = await passcodeService.getAllPasscodes();
       setPasscodes(data);
-      setLastUpdated(new Date());
       setError(null);
     } catch (err) {
       setError("Failed to load passcodes: " + (err.message || "Unknown error"));
@@ -192,12 +176,12 @@ export function PasscodeManager({ isEmbedded = false }) {
         message: "Updating passcode...",
         isLoading: true,
       });
-      
+
       // Close the confirmation dialog immediately
       setShowConfirmDialog(false);
-      
+
       await passcodeService.updatePasscode(roleToUpdate, newPasscode);
-      
+
       // Show success message in the editing area
       setUpdateStatus({
         success: true,
@@ -261,18 +245,10 @@ export function PasscodeManager({ isEmbedded = false }) {
     e.target.focus();
   };
 
-  // Filter and sort passcodes
-  const filteredAndSortedPasscodes = passcodes
-    .filter((passcode) =>
-      passcode.role.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortOrder === "asc") {
-        return a.role.localeCompare(b.role);
-      } else {
-        return b.role.localeCompare(a.role);
-      }
-    });
+  // Filter passcodes
+  const filteredPasscodes = passcodes.filter((passcode) =>
+    passcode.role.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   // Get password strength for visual feedback
   const passwordStrength = evaluatePasswordStrength(newPasscode);
@@ -285,21 +261,45 @@ export function PasscodeManager({ isEmbedded = false }) {
   // Role display config
   const getRoleConfig = (role) => {
     const configs = {
-      liturgy:   { color: "bg-blue-500",    badge: "bg-blue-50 text-blue-700 border-blue-200" },
-      pastor:    { color: "bg-purple-500",   badge: "bg-purple-50 text-purple-700 border-purple-200" },
-      translation:{ color: "bg-green-500",  badge: "bg-green-50 text-green-700 border-green-200" },
-      beamer:    { color: "bg-orange-500",   badge: "bg-orange-50 text-orange-700 border-orange-200" },
-      music:     { color: "bg-pink-500",     badge: "bg-pink-50 text-pink-700 border-pink-200" },
-      treasurer: { color: "bg-emerald-500",  badge: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-      admin:     { color: "bg-indigo-600",   badge: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+      liturgy: {
+        color: "bg-blue-500",
+        badge: "bg-blue-50 text-blue-700 border-blue-200",
+      },
+      pastor: {
+        color: "bg-purple-500",
+        badge: "bg-purple-50 text-purple-700 border-purple-200",
+      },
+      translation: {
+        color: "bg-green-500",
+        badge: "bg-green-50 text-green-700 border-green-200",
+      },
+      beamer: {
+        color: "bg-orange-500",
+        badge: "bg-orange-50 text-orange-700 border-orange-200",
+      },
+      music: {
+        color: "bg-pink-500",
+        badge: "bg-pink-50 text-pink-700 border-pink-200",
+      },
+      treasurer: {
+        color: "bg-emerald-500",
+        badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      },
+      admin: {
+        color: "bg-indigo-600",
+        badge: "bg-indigo-50 text-indigo-700 border-indigo-200",
+      },
     };
-    return configs[role] || { color: "bg-slate-400", badge: "bg-slate-50 text-slate-700 border-slate-200" };
+    return (
+      configs[role] || {
+        color: "bg-slate-400",
+        badge: "bg-slate-50 text-slate-700 border-slate-200",
+      }
+    );
   };
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: animationStyles }} />
-
       {!isEmbedded && (
         <div className="max-w-3xl mx-auto px-4 py-6">
           <button
@@ -314,31 +314,27 @@ export function PasscodeManager({ isEmbedded = false }) {
 
       <div className={isEmbedded ? "" : "max-w-3xl mx-auto px-4"}>
         {/* Panel */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-
+        <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
           {/* Panel header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                <Lock className="w-4 h-4 text-indigo-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900">Role Passcode Management</h3>
-                <p className="text-xs text-slate-500">Update access codes for each role</p>
-              </div>
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <Lock className="w-4 h-4 text-slate-400" />
+              <h3 className="text-sm font-semibold text-slate-800">
+                Role Passcodes
+              </h3>
             </div>
             <button
               onClick={refreshPasscodes}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-700 transition-colors"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Refresh
             </button>
           </div>
 
-          {/* Search / sort / visibility toolbar */}
-          <div className="px-6 py-3 border-b border-slate-100 flex flex-col sm:flex-row gap-2">
-            <div className="relative flex-1">
+          {/* Search toolbar */}
+          <div className="px-5 py-3 border-b border-slate-100">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
               <input
                 type="text"
@@ -349,60 +345,49 @@ export function PasscodeManager({ isEmbedded = false }) {
                 onFocus={handleInputFocus}
                 onMouseDown={(e) => e.stopPropagation()}
                 autoComplete="off"
-                className="w-full pl-8 pr-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                className="w-full pl-8 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
               />
             </div>
-            <button
-              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition"
-            >
-              {sortOrder === "asc" ? <SortAsc className="h-3.5 w-3.5" /> : <SortDesc className="h-3.5 w-3.5" />}
-              {sortOrder === "asc" ? "A–Z" : "Z–A"}
-            </button>
-            <button
-              onClick={() => setShowPasswords(!showPasswords)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition"
-            >
-              {showPasswords ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-              {showPasswords ? "Hide" : "Show"}
-            </button>
           </div>
-
-          {lastUpdated && (
-            <div className="px-6 py-2 flex items-center gap-1.5 text-xs text-slate-400 border-b border-slate-100">
-              <Clock className="h-3 w-3" />
-              Last refreshed: {lastUpdated.toLocaleString()}
-            </div>
-          )}
 
           {/* Role list */}
           <div className="divide-y divide-slate-100">
-            {filteredAndSortedPasscodes.length === 0 ? (
+            {filteredPasscodes.length === 0 ? (
               <div className="py-12 text-center text-sm text-slate-400">
-                {searchTerm ? `No roles matching "${searchTerm}"` : "No roles found"}
+                {searchTerm
+                  ? `No roles matching "${searchTerm}"`
+                  : "No roles found"}
               </div>
             ) : (
-              filteredAndSortedPasscodes.map((passcode) => {
+              filteredPasscodes.map((passcode) => {
                 const roleConfig = getRoleConfig(passcode.role);
                 const isEditing = editingRole === passcode.role;
 
                 return (
-                  <div key={passcode.id} className={`transition-colors ${isEditing ? "bg-indigo-50/40" : "hover:bg-slate-50/60"}`}>
+                  <div
+                    key={passcode.id}
+                    className={`transition-colors ${isEditing ? "bg-slate-50/60" : ""}`}
+                  >
                     {/* Role row */}
-                    <div className="flex items-center justify-between px-6 py-4">
+                    <div className="flex items-center justify-between px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-lg ${roleConfig.color} flex items-center justify-center flex-shrink-0`}>
-                          {passcode.role === "admin"
-                            ? <Shield className="h-4 w-4 text-white" />
-                            : <Key className="h-4 w-4 text-white" />}
-                        </div>
+                        <div
+                          className={`w-2 h-2 rounded-full flex-shrink-0 ${roleConfig.color}`}
+                        />
                         <div>
-                          <span className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full border capitalize ${roleConfig.badge}`}>
+                          <span className="text-sm font-medium text-slate-800 capitalize">
                             {passcode.role}
                           </span>
-                          <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                            <Clock className="h-3 w-3" />
-                            Updated {new Date(passcode.updated_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            Updated{" "}
+                            {new Date(passcode.updated_at).toLocaleDateString(
+                              "en-US",
+                              {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              },
+                            )}
                           </p>
                         </div>
                       </div>
@@ -410,14 +395,14 @@ export function PasscodeManager({ isEmbedded = false }) {
                       {isEditing ? (
                         <button
                           onClick={(e) => cancelEditing(e)}
-                          className="text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors"
+                          className="text-xs text-slate-400 hover:text-slate-700 transition-colors"
                         >
                           Cancel
                         </button>
                       ) : (
                         <button
                           onClick={(e) => startEditing(passcode.role, e)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
+                          className="text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
                         >
                           Change
                         </button>
@@ -426,117 +411,151 @@ export function PasscodeManager({ isEmbedded = false }) {
 
                     {/* Inline edit form */}
                     {isEditing && (
-                      <div className="px-6 pb-5 space-y-4">
-                        <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
-                          {/* New passcode */}
-                          <div className="space-y-1.5">
-                            <label
-                              htmlFor={`new-passcode-${passcode.role}`}
-                              className="text-xs font-medium text-slate-600"
+                      <div className="px-5 pb-4 space-y-3">
+                        {/* New passcode */}
+                        <div className="space-y-1.5">
+                          <label
+                            htmlFor={`new-passcode-${passcode.role}`}
+                            className="text-xs font-medium text-slate-500"
+                          >
+                            New Passcode
+                          </label>
+                          <div className="relative">
+                            <input
+                              id={`new-passcode-${passcode.role}`}
+                              type={showPasswords ? "text" : "password"}
+                              value={newPasscode}
+                              onChange={(e) => setNewPasscode(e.target.value)}
+                              placeholder="Enter new passcode"
+                              className="w-full pl-3 pr-10 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                              onClick={(e) => e.stopPropagation()}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              autoComplete="new-password"
+                            />
+                            <button
+                              type="button"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setShowPasswords(!showPasswords);
+                              }}
                             >
-                              New Passcode
-                            </label>
-                            <div className="relative">
-                              <input
-                                id={`new-passcode-${passcode.role}`}
-                                type={showPasswords ? "text" : "password"}
-                                value={newPasscode}
-                                onChange={(e) => setNewPasscode(e.target.value)}
-                                placeholder="Enter new passcode"
-                                className="w-full pl-3 pr-10 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                                onClick={(e) => e.stopPropagation()}
-                                onMouseDown={(e) => e.stopPropagation()}
-                                autoComplete="new-password"
-                              />
-                              <button
-                                type="button"
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowPasswords(!showPasswords); }}
-                              >
-                                {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </button>
-                            </div>
+                              {showPasswords ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
 
-                            {/* Strength meter */}
-                            {newPasscode && (
-                              <div className="mt-1.5 space-y-1">
-                                <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-                                  <div
-                                    className={`h-full rounded-full transition-all duration-300 ${passwordStrength.color}`}
-                                    style={{ width: `${Math.min(100, (passwordStrength.score / 6) * 100)}%` }}
-                                  />
-                                </div>
-                                <p className="text-xs text-slate-400">Strength: {passwordStrength.label}</p>
+                          {/* Strength meter */}
+                          {newPasscode && (
+                            <div className="mt-1.5 space-y-1">
+                              <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-300 ${passwordStrength.color}`}
+                                  style={{
+                                    width: `${Math.min(100, (passwordStrength.score / 6) * 100)}%`,
+                                  }}
+                                />
                               </div>
-                            )}
-                          </div>
-
-                          {/* Confirm passcode */}
-                          <div className="space-y-1.5">
-                            <label
-                              htmlFor={`confirm-passcode-${passcode.role}`}
-                              className="text-xs font-medium text-slate-600"
-                            >
-                              Confirm Passcode
-                            </label>
-                            <div className="relative">
-                              <input
-                                id={`confirm-passcode-${passcode.role}`}
-                                type={showPasswords ? "text" : "password"}
-                                value={confirmPasscode}
-                                onChange={(e) => setConfirmPasscode(e.target.value)}
-                                placeholder="Confirm new passcode"
-                                className={`w-full pl-3 pr-10 py-2.5 text-sm border rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition ${
-                                  confirmPasscode && newPasscode !== confirmPasscode
-                                    ? "border-red-300"
-                                    : "border-slate-200"
-                                }`}
-                                onClick={(e) => e.stopPropagation()}
-                                onMouseDown={(e) => e.stopPropagation()}
-                                autoComplete="new-password"
-                              />
-                              <button
-                                type="button"
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowPasswords(!showPasswords); }}
-                              >
-                                {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </button>
+                              <p className="text-xs text-slate-400">
+                                Strength: {passwordStrength.label}
+                              </p>
                             </div>
-                            {confirmPasscode && newPasscode !== confirmPasscode && (
-                              <p className="text-xs text-red-500">Passcodes don't match</p>
-                            )}
-                          </div>
+                          )}
+                        </div>
 
-                          {/* Status message */}
-                          {updateStatus.message && (
-                            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${
+                        {/* Confirm passcode */}
+                        <div className="space-y-1.5">
+                          <label
+                            htmlFor={`confirm-passcode-${passcode.role}`}
+                            className="text-xs font-medium text-slate-500"
+                          >
+                            Confirm Passcode
+                          </label>
+                          <div className="relative">
+                            <input
+                              id={`confirm-passcode-${passcode.role}`}
+                              type={showPasswords ? "text" : "password"}
+                              value={confirmPasscode}
+                              onChange={(e) =>
+                                setConfirmPasscode(e.target.value)
+                              }
+                              placeholder="Confirm new passcode"
+                              className={`w-full pl-3 pr-10 py-2.5 text-sm border rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition ${
+                                confirmPasscode &&
+                                newPasscode !== confirmPasscode
+                                  ? "border-red-300"
+                                  : "border-slate-200"
+                              }`}
+                              onClick={(e) => e.stopPropagation()}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              autoComplete="new-password"
+                            />
+                            <button
+                              type="button"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setShowPasswords(!showPasswords);
+                              }}
+                            >
+                              {showPasswords ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                          {confirmPasscode &&
+                            newPasscode !== confirmPasscode && (
+                              <p className="text-xs text-red-500">
+                                Passcodes don't match
+                              </p>
+                            )}
+                        </div>
+
+                        {/* Status message */}
+                        {updateStatus.message && (
+                          <div
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${
                               updateStatus.success
                                 ? "bg-green-50 text-green-700 border border-green-200"
                                 : updateStatus.isWarning
-                                ? "bg-amber-50 text-amber-700 border border-amber-200"
-                                : "bg-red-50 text-red-700 border border-red-200"
-                            }`}>
-                              {updateStatus.success
-                                ? <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
-                                : updateStatus.isWarning
-                                ? <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-                                : updateStatus.isLoading
-                                ? <RefreshCw className="h-3.5 w-3.5 flex-shrink-0 animate-spin" />
-                                : <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />}
-                              {updateStatus.message}
-                            </div>
-                          )}
-
-                          <div className="flex justify-end pt-1">
-                            <Button
-                              onClick={(e) => confirmPasscodeUpdate(passcode.role, e)}
-                              disabled={!newPasscode || !confirmPasscode || newPasscode !== confirmPasscode}
-                              className="inline-flex items-center gap-2 h-9 px-5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm disabled:opacity-50 transition-colors"
-                            >
-                              Update Passcode
-                            </Button>
+                                  ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                  : "bg-red-50 text-red-700 border border-red-200"
+                            }`}
+                          >
+                            {updateStatus.success ? (
+                              <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                            ) : updateStatus.isWarning ? (
+                              <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                            ) : updateStatus.isLoading ? (
+                              <RefreshCw className="h-3.5 w-3.5 flex-shrink-0 animate-spin" />
+                            ) : (
+                              <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                            )}
+                            {updateStatus.message}
                           </div>
+                        )}
+
+                        <div className="flex justify-end pt-1">
+                          <Button
+                            onClick={(e) =>
+                              confirmPasscodeUpdate(passcode.role, e)
+                            }
+                            disabled={
+                              !newPasscode ||
+                              !confirmPasscode ||
+                              newPasscode !== confirmPasscode
+                            }
+                            className="inline-flex items-center gap-2 h-8 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm disabled:opacity-50 transition-colors"
+                          >
+                            Update
+                          </Button>
                         </div>
                       </div>
                     )}
@@ -546,36 +565,41 @@ export function PasscodeManager({ isEmbedded = false }) {
             )}
           </div>
 
-          {/* Footer */}
-          <div className="px-6 py-3 border-t border-slate-100 flex items-center justify-between">
-            <p className="text-xs text-slate-400">
-              {filteredAndSortedPasscodes.length} {filteredAndSortedPasscodes.length === 1 ? "role" : "roles"}
-              {searchTerm && ` matching "${searchTerm}"`}
-            </p>
-            {searchTerm && (
+          {searchTerm && (
+            <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between">
+              <p className="text-xs text-slate-400">
+                {filteredPasscodes.length}{" "}
+                {filteredPasscodes.length === 1 ? "result" : "results"} for
+                &ldquo;{searchTerm}&rdquo;
+              </p>
               <button
                 onClick={() => setSearchTerm("")}
-                className="text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors"
+                className="text-xs text-slate-400 hover:text-slate-700 transition-colors"
               >
-                Clear filter
+                Clear
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Confirmation modal */}
         {showConfirmDialog && (
           <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-sm p-6 animate-fade-in">
+            <div className="bg-white rounded-xl shadow-lg border border-slate-100 w-full max-w-sm p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
                   <Shield className="h-4 w-4 text-indigo-600" />
                 </div>
-                <h3 className="text-sm font-semibold text-slate-900">Confirm Passcode Update</h3>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Confirm Passcode Update
+                </h3>
               </div>
               <p className="text-sm text-slate-600 mb-6">
                 Update the passcode for role{" "}
-                <span className="font-semibold text-indigo-600 capitalize">{roleToUpdate}</span>?
+                <span className="font-semibold text-indigo-600 capitalize">
+                  {roleToUpdate}
+                </span>
+                ?
               </p>
               <div className="flex gap-3">
                 <Button
